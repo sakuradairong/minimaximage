@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minimaximage"
+version = "0.1.0"
+description = "Text-to-image and image-to-image generation CLI backed by the Minimax image_generation API."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "minimaximage contributors" }]
+keywords = ["minimax", "image-generation", "t2i", "i2i", "cli"]
+dependencies = ["httpx>=0.27.0", "python-dotenv>=1.0.0", "Pillow>=10.0.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "pytest-cov>=5.0.0", "ruff>=0.5.0", "pyinstaller>=6.0"]
+
+[project.scripts]
+minimaximage = "minimaximage.cli:main"
+minimaximage-gui = "minimaximage.gui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --cov=minimaximage --cov-report=term-missing"

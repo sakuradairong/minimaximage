@@ -1,0 +1,44 @@
+# Bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual envs
+.venv/
+venv/
+env/
+ENV/
+
+# Test / coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build artefacts
+build/
+dist/
+*.spec
+*.egg-info/
+*.egg
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+pip-log.txt
