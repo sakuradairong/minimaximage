@@ -9,31 +9,35 @@ have Python installed, build a single-file executable with PyInstaller.
 py -3 -m venv .venv
 .venv\Scripts\activate
 pip install -e ".[dev]"
+python scripts\build_frontend.py
 python scripts\build.py
 ```
 
-The result is two files in `dist\`:
+The result is three files in `dist\`:
 
 - `dist\minimaximage.exe` — command-line interface
-- `dist\minimaximage-gui.exe` — desktop GUI (no console window)
+- `dist\minimaximage-desktop.exe` — modern FastAPI + React + pywebview GUI
+- `dist\minimaximage-gui.exe` — legacy Tk desktop GUI (no console window)
 
 Copy the `.exe`(s) to any folder. Users run them from that folder (or add it
 to `PATH`). They do **not** need Python installed.
 
 ## Output sizes
 
-Both binaries are around 40 MB. PyInstaller embeds the Python runtime and
-every dependency (Pillow, httpx, dotenv, tkinter, the `minimaximage` package).
-Most of that footprint is the Python runtime + Pillow image codecs.
+The CLI and legacy GUI binaries are around 20-40 MB. The modern desktop binary
+is larger because it embeds FastAPI, uvicorn, pywebview, and the built React
+frontend. PyInstaller embeds the Python runtime and every dependency.
 
 ## Distribution checklist
 
-1. Copy `dist\minimaximage-gui.exe` (and optionally `dist\minimaximage.exe`)
+1. Copy `dist\minimaximage-desktop.exe` (and optionally `dist\minimaximage.exe`)
    to the target machine.
 2. Drop a `.env` file next to the exe(s) with at minimum:
-   ```
+
+   ```dotenv
    MINIMAX_API_KEY=eyJhbGciOi...
    ```
+
 3. The GUI/CLI looks for `.env` in the **current working directory** (CWD).
    - When the user **double-clicks** the GUI exe, CWD is usually the exe's
      folder, so a sibling `.env` works.
@@ -42,7 +46,7 @@ Most of that footprint is the Python runtime + Pillow image codecs.
 
 ## Build options
 
-```
+```powershell
 python scripts\build.py --help
 ```
 
@@ -50,9 +54,10 @@ Common flags:
 
 | Flag | Effect |
 | --- | --- |
-| `--gui-only` | Build only the GUI binary |
+| `--desktop-only` | Build only the modern FastAPI + React + pywebview GUI |
+| `--gui-only` | Build only the legacy Tk GUI binary |
 | `--cli-only` | Build only the CLI binary |
-| `--no-onefile` | Produce a folder instead of a single exe (faster startup, easier to debug) |
+| `--no-onefile` | Produce a folder instead of a single exe |
 | `--icon path\to\icon.ico` | Embed a Windows icon in the GUI binary |
 | `--no-clean` | Skip removing previous `build/` artefacts (faster re-builds) |
 

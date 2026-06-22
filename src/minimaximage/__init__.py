@@ -8,7 +8,15 @@ from minimaximage.config import (
     load_config,
     save_config,
 )
-from minimaximage.generate import generate_image
+from minimaximage.generate import (
+    ImageGenerationCommand,
+    build_generation_command,
+    generate_and_save,
+    generate_image,
+    generate_with_settings,
+    parse_reference_urls,
+    save_response_images,
+)
 from minimaximage.models import (
     AspectRatio,
     ImageModel,
@@ -22,6 +30,7 @@ from minimaximage.models import (
 
 __all__ = [
     "AspectRatio",
+    "ImageGenerationCommand",
     "ImageModel",
     "ImageRequest",
     "ImageResponse",
@@ -31,12 +40,17 @@ __all__ = [
     "ResponseFormat",
     "Settings",
     "SubjectReference",
+    "build_generation_command",
     "clear_config_value",
     "config_path",
+    "generate_and_save",
     "generate_image",
+    "generate_with_settings",
     "load_config",
+    "parse_reference_urls",
     "parse_response",
     "save_config",
+    "save_response_images",
 ]
 
 __version__ = "0.1.0"

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "06880b826cb3ccc8dd5cfa9c21229b76",
+    "created_at": "2026-06-22T06:38:40.894999+00:00",
+    "prompt": "\u52a8\u6f2b\u89d2\u8272",
+    "model": "image-01",
+    "n": 1,
+    "images": [
+      {
+        "filename": "06880b826cb3ccc8dd5cfa9c21229b76.png",
+        "path": "C:\\Users\\chena\\Documents\\minimaximage\\output\\06880b826cb3ccc8dd5cfa9c21229b76.png",
+        "file_url": "/api/files/06880b826cb3ccc8dd5cfa9c21229b76.png"
+      }
+    ]
+  }
+]

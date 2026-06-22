@@ -41,7 +41,7 @@ def test_cli_writes_image_files(tmp_path: Path, capsys: pytest.CaptureFixture[st
     client = MagicMock()
     client.generate.return_value = body
 
-    with patch("minimaximage.generate.MinimaxClient", return_value=client):
+    with patch("minimaximage.cli.MinimaxClient", return_value=client):
         rc = main(
             [
                 "a fluffy cat",
@@ -69,7 +69,7 @@ def test_cli_print_json_outputs_response(
     client = MagicMock()
     client.generate.return_value = body
 
-    with patch("minimaximage.generate.MinimaxClient", return_value=client):
+    with patch("minimaximage.cli.MinimaxClient", return_value=client):
         rc = main(["hi", "--print-json"])
 
     assert rc == 0
@@ -93,7 +93,7 @@ def test_cli_returns_nonzero_on_api_error(capsys: pytest.CaptureFixture[str]) ->
     client.generate.return_value = fake_response_body(
         status_code=1001, status_msg="content blocked", urls=[]
     )
-    with patch("minimaximage.generate.MinimaxClient", return_value=client):
+    with patch("minimaximage.cli.MinimaxClient", return_value=client):
         rc = main(["forbidden"])
 
     assert rc == 1
@@ -122,17 +122,14 @@ def test_cli_api_key_flag_overrides_env(
 ) -> None:
     monkeypatch.setenv("MINIMAX_API_KEY", "from-env")
 
-    body = fake_response_body(task_id="cli-api-key", urls=["https://x/1.png"])
-    response = MagicMock()
-    response.to_dict.return_value = body
-    response.id = "cli-api-key"
-    response.success_count = 1
-    response.failed_count = 0
-    response.images = []
+    body = fake_response_body(task_id="cli-api-key", urls=[])
+    client = MagicMock()
+    client.generate.return_value = body
 
-    monkeypatch.setattr("minimaximage.cli.generate_image", lambda *a, **kw: response)
-
-    rc = main(["hi", "--api-key", "from-cli", "--print-json"])
+    with patch("minimaximage.cli.MinimaxClient", return_value=client) as Client:
+        rc = main(["hi", "--api-key", "from-cli", "--print-json"])
 
     assert rc == 0
     assert json.loads(capsys.readouterr().out)["id"] == "cli-api-key"
+    Client.assert_called_once_with(api_key="from-cli", base_url="https://api.minimaxi.com")
+    client.close.assert_called_once()

@@ -7,9 +7,13 @@ import json
 import sys
 from pathlib import Path
 
+from minimaximage.client import MinimaxClient
 from minimaximage.config import Settings
-from minimaximage.download import URL_EXPIRY_HOURS, default_filename, download_to_path
-from minimaximage.generate import generate_image
+from minimaximage.generate import (
+    build_generation_command,
+    generate_with_settings,
+    save_response_images,
+)
 from minimaximage.models import (
     MAX_N,
     AspectRatio,
@@ -145,19 +149,20 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--aspect-ratio is mutually exclusive with --width/--height")
 
     try:
-        response = generate_image(
-            args.prompt,
+        command = build_generation_command(
+            prompt=args.prompt,
             model=args.model or settings.model,
             aspect_ratio=args.aspect_ratio or settings.aspect_ratio,
             width=args.width,
             height=args.height,
             response_format=args.response_format or settings.response_format,
             seed=args.seed,
-            n=args.n or settings.n,
+            n=args.n if args.n is not None else settings.n,
             prompt_optimizer=args.prompt_optimizer,
             aigc_watermark=args.watermark,
             reference_images=args.reference or None,
         )
+        response = generate_with_settings(command, settings, client_factory=MinimaxClient)
     except Exception as e:  # surface a clean error to the user
         print(f"error: {e}", file=sys.stderr)
         return 1
@@ -166,23 +171,12 @@ def main(argv: list[str] | None = None) -> int:
         _print_json(response.to_dict())
         return 0
 
-    saved: list[str] = []
     out_dir = Path(args.output_dir)
-    for idx, img in enumerate(response.images):
-        path = out_dir / default_filename(response.id, idx)
-        if img.is_base64:
-            import base64
-
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(base64.b64decode(img.value))
-        else:
-            print(f"Downloading {img.value} (URL valid for ~{URL_EXPIRY_HOURS}h) → {path}")
-            download_to_path(img.value, str(path))
-        saved.append(str(path))
+    saved = save_response_images(response, out_dir)
 
     print(f"Generated {response.success_count} image(s); failed={response.failed_count}")
-    for s in saved:
-        print(s)
+    for path in saved:
+        print(path)
     return 0
 
 

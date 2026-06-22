@@ -12,7 +12,6 @@ standard Python installer on Windows and macOS; on Linux install the
 
 from __future__ import annotations
 
-import base64
 import os
 import queue
 import subprocess
@@ -31,8 +30,12 @@ from minimaximage.config import (
     load_config,
     save_config,
 )
-from minimaximage.download import default_filename, download_to_path
-from minimaximage.generate import generate_image
+from minimaximage.generate import (
+    build_generation_command,
+    generate_image,
+    parse_reference_urls,
+    save_response_images,
+)
 from minimaximage.models import AspectRatio, ImageModel, ResponseFormat
 
 DEFAULT_OUTPUT_DIR = Path("./output")
@@ -46,7 +49,7 @@ POLL_MS = 100
 
 def parse_references(text: str) -> list[str]:
     """Parse a newline-separated list of reference image URLs."""
-    return [line.strip() for line in text.splitlines() if line.strip()]
+    return parse_reference_urls(text)
 
 
 def build_request_params(
@@ -62,31 +65,18 @@ def build_request_params(
     reference_text: str,
 ) -> dict[str, Any]:
     """Translate form values into kwargs for generate_image()."""
-    return {
-        "prompt": prompt.strip(),
-        "model": ImageModel.parse(model),
-        "aspect_ratio": aspect_ratio or None,
-        "n": n,
-        "seed": int(seed) if seed.strip() else None,
-        "response_format": response_format,
-        "prompt_optimizer": prompt_optimizer,
-        "aigc_watermark": watermark,
-        "reference_images": parse_references(reference_text) or None,
-    }
-
-
-def save_response_images(response: Any, out_dir: Path) -> list[Path]:
-    """Persist every image in the response to `out_dir` and return the paths."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-    paths: list[Path] = []
-    for idx, img in enumerate(response.images):
-        path = out_dir / default_filename(response.id, idx)
-        if img.is_base64:
-            path.write_bytes(base64.b64decode(img.value))
-        else:
-            download_to_path(img.value, str(path))
-        paths.append(path)
-    return paths
+    command = build_generation_command(
+        prompt=prompt,
+        model=model,
+        aspect_ratio=aspect_ratio,
+        n=n,
+        seed=seed,
+        response_format=response_format,
+        prompt_optimizer=prompt_optimizer,
+        aigc_watermark=watermark,
+        reference_text=reference_text,
+    )
+    return command.to_generate_kwargs()
 
 
 # --------------------------------------------------------------------------- #

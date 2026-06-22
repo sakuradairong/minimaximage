@@ -16,33 +16,37 @@ Outputs:
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import PyInstaller.__main__
-
 
 # PyInstaller doesn't always pick up these dynamic imports — list them
 # explicitly so the resulting binary is self-contained.
 COMMON_HIDDEN_IMPORTS = [
     "PIL._tkinter_finder",
     "httpx",
-    "httpx._sync",
     "httpx._exceptions",
     "httpx._transports",
     "httpx._transports.default",
     "httpx._urlparse",
     "dotenv",
+    "fastapi",
+    "uvicorn",
+    "webview",
     "minimaximage",
     "minimaximage.cli",
+    "minimaximage.desktop",
     "minimaximage.gui",
     "minimaximage.models",
     "minimaximage.client",
     "minimaximage.config",
     "minimaximage.download",
     "minimaximage.generate",
+    "minimaximage.server",
 ]
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,6 +55,11 @@ BUILD = ROOT / "build"
 SPEC_DIR = ROOT
 
 TARGETS = {
+    "minimaximage-desktop": {
+        "script": "src/minimaximage/desktop.py",
+        "windowed": True,
+        "frontend": True,
+    },
     "minimaximage-gui": {
         "script": "src/minimaximage/gui.py",
         "windowed": True,
@@ -64,7 +73,7 @@ TARGETS = {
 
 def _run_pyinstaller(args: Sequence[str]) -> None:
     """Invoke PyInstaller's CLI with the given args (without the binary name)."""
-    print("→ pyinstaller " + " ".join(args), flush=True)
+    print("-> pyinstaller " + " ".join(args), flush=True)
     PyInstaller.__main__.run(list(args))
 
 
@@ -109,11 +118,13 @@ def build_target(
         args.append(f"--hidden-import={hidden}")
 
     # Include the .env.example next to the binary so users have a template.
-    import os
-
     env_example = ROOT / ".env.example"
     if env_example.exists():
         args.append(f"--add-data={env_example}{os.pathsep}.")
+
+    frontend_dist = ROOT / "frontend" / "dist"
+    if spec.get("frontend") and frontend_dist.exists():
+        args.append(f"--add-data={frontend_dist}{os.pathsep}frontend/dist")
 
     _run_pyinstaller(args)
 
@@ -127,8 +138,9 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    p.add_argument("--gui-only", action="store_true", help="Build only the GUI binary")
+    p.add_argument("--gui-only", action="store_true", help="Build only the legacy Tk GUI binary")
     p.add_argument("--cli-only", action="store_true", help="Build only the CLI binary")
+    p.add_argument("--desktop-only", action="store_true", help="Build only the React/pywebview GUI")
     p.add_argument(
         "--no-onefile",
         action="store_true",
@@ -138,21 +150,30 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-clean", action="store_true", help="Skip removing previous build artefacts")
     args = p.parse_args(argv)
 
-    if args.gui_only and args.cli_only:
-        p.error("--gui-only and --cli-only are mutually exclusive")
+    only_flags = [args.gui_only, args.cli_only, args.desktop_only]
+    if sum(bool(flag) for flag in only_flags) > 1:
+        p.error("--gui-only, --cli-only and --desktop-only are mutually exclusive")
 
     DIST.mkdir(exist_ok=True)
     onefile = not args.no_onefile
     clean = not args.no_clean
 
     built: list[Path] = []
-    if not args.cli_only:
-        built.append(build_target("minimaximage-gui", onefile=onefile, icon=args.icon, clean=clean))
-    if not args.gui_only:
-        built.append(build_target("minimaximage", onefile=onefile, clean=clean))
+    if args.cli_only:
+        selected = ["minimaximage"]
+    elif args.gui_only:
+        selected = ["minimaximage-gui"]
+    elif args.desktop_only:
+        selected = ["minimaximage-desktop"]
+    else:
+        selected = ["minimaximage-desktop", "minimaximage-gui", "minimaximage"]
+
+    for target in selected:
+        target_icon = args.icon if TARGETS[target]["windowed"] else None
+        built.append(build_target(target, onefile=onefile, icon=target_icon, clean=clean))
 
     print()
-    print("✓ Build complete. Artefacts:")
+    print("Build complete. Artefacts:")
     for path in built:
         size = path.stat().st_size if path.exists() else 0
         print(f"  {path}  ({size / (1024 * 1024):.1f} MB)")

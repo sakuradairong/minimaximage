@@ -2,7 +2,7 @@
 
 Generate images with the **Minimax `image_generation` API** (`image-01` /
 `image-01-live`). Ships as a Python SDK, a terminal CLI, **and a cross-platform
-desktop GUI** — pick whichever fits your workflow.
+desktop GUIs** — pick whichever fits your workflow.
 
 API reference: <https://platform.minimaxi.com/docs/api-reference/image-generation-t2i>
 
@@ -13,8 +13,10 @@ API reference: <https://platform.minimaxi.com/docs/api-reference/image-generatio
 - Choose between `url` (24 h expiry) and `base64` responses
 - Reproducible runs via `seed`
 - `prompt_optimizer` and AIGC watermark toggles
-- 🖥️ **Desktop GUI** with live preview, multi-image navigation, and "Open in
-  viewer" — works on Windows, macOS, and Linux
+- 🖥️ **Modern desktop UI** powered by FastAPI + React/Vite + pywebview,
+  inspired by the MiniMax image debug console
+- 🧰 **Legacy Tk desktop GUI** with live preview, multi-image navigation, and
+  "Open in viewer" — works on Windows, macOS, and Linux
 
 ## Install (Windows)
 
@@ -38,10 +40,12 @@ The API key is resolved in this order (first match wins):
 2. **User config file** — `%APPDATA%\minimaximage\config.json` (Windows),
    `~/.config/minimaximage/config.json` (Linux / macOS). Created by the
    GUI's **Save** button or by running:
+
    ```python
    from minimaximage import save_config
    save_config({"api_key": "eyJhbGciOi..."})
    ```
+
 3. **`MINIMAX_API_KEY` environment variable** (or `.env` file via
    python-dotenv).
 4. **`--api-key KEY`** CLI flag overrides all of the above for that single
@@ -50,9 +54,42 @@ The API key is resolved in this order (first match wins):
 This means you can launch the GUI without any environment setup, paste the
 key into the field, click **Save**, and never set an env var again.
 
-## GUI
+## Modern Web Desktop GUI
 
-Launch the desktop app with any of:
+The recommended desktop UI is a local FastAPI backend plus a React/Vite
+frontend hosted inside a pywebview window. It mirrors the MiniMax image debug
+console layout: prompt templates, prompt editor, reference image URLs, basic
+settings, advanced settings, generation results, history, and curl preview.
+
+Development mode:
+
+```powershell
+# terminal 1: backend
+uvicorn minimaximage.server:app --host 127.0.0.1 --port 8765
+
+# terminal 2: frontend
+cd frontend
+npm install
+npm run dev
+```
+
+Desktop mode:
+
+```powershell
+minimaximage-desktop
+# or
+python -m minimaximage desktop
+```
+
+Production frontend build:
+
+```powershell
+python scripts\build_frontend.py
+```
+
+## Legacy Tk GUI
+
+Launch the legacy Tk desktop app with any of:
 
 ```powershell
 minimaximage-gui
@@ -60,7 +97,7 @@ minimaximage-gui
 python -m minimaximage gui
 ```
 
-```
+```text
 ┌──────────────────────────────────────────────────────────┐
 │ minimaximage — image generator                           │
 ├──────────────────────────────────────────────────────────┤
@@ -158,8 +195,8 @@ Switch to image-to-image by passing `reference_images=[url1, url2, ...]`.
 | --- | --- |
 | `model` | `image-01` or `image-01-live` |
 | `prompt` | ≤ 1500 characters |
-| `aspect_ratio` | `1:1`, `16:9`, `4:3`, `3:2`, `2:3`, `3:4`, `9:16`, `21:9` (21:9 only on `image-01`) |
-| `width` / `height` | `image-01` only, [512, 2048], multiple of 8, set together |
+| `aspect_ratio` | `1:1`, `16:9`, `4:3`, `3:2`, `2:3`, `3:4`, `9:16`, `21:9` (`21:9` only on `image-01`) |
+| `width` / `height` | `image-01` only; [512, 2048], multiple of 8, set together |
 | `n` | 1–9 |
 | `response_format` | `url` (default, 24 h expiry) or `base64` |
 | `seed` | `int64` for reproducibility |
@@ -183,20 +220,22 @@ To produce a Windows `.exe` that runs without Python installed:
 py -3 -m venv .venv
 .venv\Scripts\activate
 pip install -e ".[dev]"
+python scripts\build_frontend.py
 python scripts\build.py
 ```
 
-Two files land in `dist\`:
+Three files land in `dist\`:
 
 - `dist\minimaximage.exe` — command-line interface
-- `dist\minimaximage-gui.exe` — desktop GUI (no console window)
+- `dist\minimaximage-desktop.exe` — modern FastAPI + React + pywebview GUI
+- `dist\minimaximage-gui.exe` — legacy Tk desktop GUI (no console window)
 
 See [BUILDING.md](BUILDING.md) for distribution tips, signing, antivirus
 workarounds, and a sample GitHub Actions workflow.
 
 ## Project layout
 
-```
+```text
 src/minimaximage/
 ├── __init__.py    # public API re-exports
 ├── __main__.py    # python -m minimaximage [gui]
